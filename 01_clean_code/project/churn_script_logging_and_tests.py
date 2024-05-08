@@ -1,6 +1,13 @@
-import pytest
-import os
+"""
+Unit test of churn_library with
+author: a-ngo
+date: 2024-05-08
+"""
+
 import logging
+
+import pytest
+
 from churn_library import import_data, perform_eda, encoder_helper, \
     perform_feature_engineering, train_or_load_models
 

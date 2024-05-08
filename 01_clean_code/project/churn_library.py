@@ -1,10 +1,15 @@
-"""Main script to run the library to predict clients who are likely to churn."""
+"""
+Main script to run the library to predict clients who are likely to churn.
+author: a-ngo
+date: 2024-05-08
+"""
 
 # import libraries
 # from sklearn.metrics import plot_roc_curve, classification_report #
 # plot_roc_curve is depcrecated
 import os
 import argparse
+
 from sklearn.metrics import RocCurveDisplay, classification_report
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -16,8 +21,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set()
 
+sns.set()
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
 
@@ -104,7 +109,6 @@ def encoder_helper(df, category_lst):
             df: pandas dataframe with new columns for
     '''
     for category in category_lst:
-        # TODO: check this. is this correct?
         # bc this failed: groups = df.groupby(category).mean()['Churn']
         groups = df.groupby(category)["Churn"].mean()
 
@@ -345,8 +349,6 @@ def train_or_load_models(X_train, X_test, y_train, y_test, train=False):
 
     y_train_preds_lr = lr_model.predict(X_train)
     y_test_preds_lr = lr_model.predict(X_test)
-
-    # TODO: add logging
 
     # reports
     classification_report_image(y_train,
