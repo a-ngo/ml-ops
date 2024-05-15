@@ -163,3 +163,5 @@ cython_debug/
 
 # weights and biases
 wandb/
+# mlflow
+mlruns/

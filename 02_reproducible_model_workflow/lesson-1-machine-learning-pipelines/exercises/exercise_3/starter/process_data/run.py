@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 import argparse
 import logging
-import seaborn as sns
-import pandas as pd
-import wandb
 
+import coloredlogs
+import pandas as pd
+import seaborn as sns
+import wandb
 from sklearn.manifold import TSNE
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
@@ -22,7 +23,13 @@ def go(args):
     iris = pd.read_csv(
         artifact_path,
         skiprows=1,
-        names=("sepal_length", "sepal_width", "petal_length", "petal_width", "target"),
+        names=(
+            "sepal_length",
+            "sepal_width",
+            "petal_length",
+            "petal_width",
+            "target",
+        ),
     )
 
     target_names = "setosa,versicolor,virginica".split(",")
@@ -56,6 +63,8 @@ def go(args):
 
 
 if __name__ == "__main__":
+    coloredlogs.install("INFO")
+
     parser = argparse.ArgumentParser(
         description="Download a file and upload it as an artifact to W&B",
         fromfile_prefix_chars="@",
@@ -69,11 +78,17 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--artifact_name", type=str, help="Name for the artifact", required=True
+        "--artifact_name",
+        type=str,
+        help="Name for the artifact",
+        required=True,
     )
 
     parser.add_argument(
-        "--artifact_type", type=str, help="Type for the artifact", required=True
+        "--artifact_type",
+        type=str,
+        help="Type for the artifact",
+        required=True,
     )
 
     parser.add_argument(
