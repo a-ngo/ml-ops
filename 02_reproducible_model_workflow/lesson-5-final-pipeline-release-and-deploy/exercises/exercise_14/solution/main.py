@@ -1,11 +1,12 @@
-import mlflow
 import os
+
 import hydra
+import mlflow
 from omegaconf import DictConfig, OmegaConf
 
 
 # This automatically reads in the configuration
-@hydra.main(config_name='config')
+@hydra.main(config_name="config")
 def go(config: DictConfig):
 
     # Setup the wandb experiment. All runs will be grouped under this name
@@ -33,7 +34,7 @@ def go(config: DictConfig):
                 "file_url": config["data"]["file_url"],
                 "artifact_name": "raw_data.parquet",
                 "artifact_type": "raw_data",
-                "artifact_description": "Data as downloaded"
+                "artifact_description": "Data as downloaded",
             },
         )
 
@@ -45,7 +46,7 @@ def go(config: DictConfig):
                 "input_artifact": "raw_data.parquet:latest",
                 "artifact_name": "preprocessed_data.csv",
                 "artifact_type": "preprocessed_data",
-                "artifact_description": "Data with preprocessing applied"
+                "artifact_description": "Data with preprocessing applied",
             },
         )
 
@@ -56,7 +57,7 @@ def go(config: DictConfig):
             parameters={
                 "reference_artifact": config["data"]["reference_dataset"],
                 "sample_artifact": "preprocessed_data.csv:latest",
-                "ks_alpha": config["data"]["ks_alpha"]
+                "ks_alpha": config["data"]["ks_alpha"],
             },
         )
 
@@ -70,7 +71,7 @@ def go(config: DictConfig):
                 "artifact_root": "data",
                 "artifact_type": "segregated_data",
                 "test_size": config["data"]["test_size"],
-                "stratify": config["data"]["stratify"]
+                "stratify": config["data"]["stratify"],
             },
         )
 
@@ -87,10 +88,12 @@ def go(config: DictConfig):
             parameters={
                 "train_data": "data_train.csv:latest",
                 "model_config": model_config,
-                "export_artifact": config["random_forest_pipeline"]["export_artifact"],
+                "export_artifact": config["random_forest_pipeline"][
+                    "export_artifact"
+                ],
                 "random_seed": config["main"]["random_seed"],
                 "val_size": config["data"]["test_size"],
-                "stratify": config["data"]["stratify"]
+                "stratify": config["data"]["stratify"],
             },
         )
 
@@ -101,7 +104,7 @@ def go(config: DictConfig):
             "main",
             parameters={
                 "model_export": f"{config['random_forest_pipeline']['export_artifact']}:latest",
-                "test_data": "data_test.csv:latest"
+                "test_data": "data_test.csv:latest",
             },
         )
 
