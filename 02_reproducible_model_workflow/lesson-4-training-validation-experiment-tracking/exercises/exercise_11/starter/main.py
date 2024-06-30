@@ -1,13 +1,19 @@
 import json
 
-import mlflow
+# HACK
+import numpy as np
+
+np.object = object
+
 import os
+
 import hydra
+import mlflow
 from omegaconf import DictConfig, OmegaConf
 
 
 # This automatically reads in the configuration
-@hydra.main(config_name='config')
+@hydra.main(config_name="config")
 def go(config: DictConfig):
 
     # Setup the wandb experiment. All runs will be grouped under this name
@@ -28,7 +34,7 @@ def go(config: DictConfig):
         "main",
         parameters={
             "train_data": config["data"]["train_data"],
-            "model_config": model_config
+            "model_config": model_config,
         },
     )
 

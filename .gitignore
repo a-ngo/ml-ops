@@ -163,8 +163,10 @@ cython_debug/
 
 # weights and biases
 wandb/
+artifacts/
 # mlflow
 mlruns/
 # hydra
 outputs/
+multirun/
 

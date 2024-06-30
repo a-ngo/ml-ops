@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 import argparse
 import logging
+
+# HACK
+import numpy as np
 import pandas as pd
 import wandb
-import mlflow.sklearn
+
+np.object = object
+
+
 import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
+import mlflow.sklearn
+from sklearn.metrics import plot_confusion_matrix, roc_auc_score
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
@@ -35,7 +42,9 @@ def go(args):
     pred_proba = pipe.predict_proba(X_test)
 
     logger.info("Scoring")
-    score = roc_auc_score(y_test, pred_proba, average="macro", multi_class="ovo")
+    score = roc_auc_score(
+        y_test, pred_proba, average="macro", multi_class="ovo"
+    )
 
     run.summary["AUC"] = score
 
@@ -52,11 +61,7 @@ def go(args):
     )
     fig_cm.tight_layout()
 
-    run.log(
-        {
-            "confusion_matrix": wandb.Image(fig_cm)
-        }
-    )
+    run.log({"confusion_matrix": wandb.Image(fig_cm)})
 
 
 if __name__ == "__main__":

@@ -7,9 +7,11 @@ entry_points:
       model_export:
         description: Fully-qualified artifact name for the exported model to evaluate
         type: str
+        default: exercise_12/model_export:latest
       test_data:
         description: Fully-qualified artifact name for the test data
         type: str
+        default: exercise_6/data_test.csv:latest
     command: >-
       python run.py --model_export {model_export} \
                     --test_data {test_data}

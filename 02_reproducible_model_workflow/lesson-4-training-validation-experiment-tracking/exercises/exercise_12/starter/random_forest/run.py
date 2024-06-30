@@ -2,23 +2,32 @@
 import argparse
 import logging
 import os
-
-import yaml
 import tempfile
-import mlflow
-import pandas as pd
+
 import numpy as np
+
+# HACK
+np.object = object
+
+import matplotlib.pyplot as plt
+import mlflow
+import numpy as np
+import pandas as pd
+import wandb
+import yaml
 from mlflow.models import infer_signature
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OrdinalEncoder, StandardScaler, FunctionTransformer
-import matplotlib.pyplot as plt
-import wandb
-from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import plot_confusion_matrix, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import (
+    FunctionTransformer,
+    OrdinalEncoder,
+    StandardScaler,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
@@ -54,7 +63,9 @@ def go(args):
     pred_proba = pipe.predict_proba(X_val)
 
     logger.info("Scoring")
-    score = roc_auc_score(y_val, pred_proba, average="macro", multi_class="ovo")
+    score = roc_auc_score(
+        y_val, pred_proba, average="macro", multi_class="ovo"
+    )
 
     run.summary["AUC"] = score
 
@@ -100,11 +111,25 @@ def export_model(run, pipe, X_val, val_pred, export_artifact):
         # function. Provide the signature computed above ("signature") as well as a few
         # examples (input_example=X_val.iloc[:2]), and use the CLOUDPICKLE serialization
         # format (mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE)
+        mlflow.sklearn.save_model(
+            pipe,
+            export_path,
+            signature=signature,
+            input_example=X_val.iloc[:2],
+            serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
+        )
 
         # Then upload the temp_dir directory as an artifact:
         # 1. create a wandb.Artifact instance called "artifact"
         # 2. add the temp directory using .add_dir
         # 3. log the artifact to the run
+        artifact = wandb.Artifact(
+            export_artifact,
+            type="model_export",
+            description="Random Forest pipeline export",
+        )
+        artifact.add_dir(temp_dir)
+        run.log_artifact(artifact)
 
         # Make sure the artifact is uploaded before the temp dir
         # gets deleted
@@ -121,12 +146,16 @@ def plot_feature_importance(pipe):
     feat_imp = pipe["classifier"].feature_importances_[: len(feat_names)]
     # For the NLP feature we sum across all the TF-IDF dimensions into a global
     # NLP importance
-    nlp_importance = sum(pipe["classifier"].feature_importances_[len(feat_names) :])
+    nlp_importance = sum(
+        pipe["classifier"].feature_importances_[len(feat_names) :]
+    )
     feat_imp = np.append(feat_imp, nlp_importance)
     feat_names = np.append(feat_names, "title + song_name")
     fig_feat_imp, sub_feat_imp = plt.subplots(figsize=(10, 10))
     idx = np.argsort(feat_imp)[::-1]
-    sub_feat_imp.bar(range(feat_imp.shape[0]), feat_imp[idx], color="r", align="center")
+    sub_feat_imp.bar(
+        range(feat_imp.shape[0]), feat_imp[idx], color="r", align="center"
+    )
     _ = sub_feat_imp.set_xticks(range(feat_imp.shape[0]))
     _ = sub_feat_imp.set_xticklabels(feat_names[idx], rotation=90)
     fig_feat_imp.tight_layout()
@@ -184,7 +213,10 @@ def get_training_inference_pipeline(args):
     pipe = Pipeline(
         steps=[
             ("preprocessor", preprocessor),
-            ("classifier", RandomForestClassifier(**model_config["random_forest"])),
+            (
+                "classifier",
+                RandomForestClassifier(**model_config["random_forest"]),
+            ),
         ]
     )
     return pipe

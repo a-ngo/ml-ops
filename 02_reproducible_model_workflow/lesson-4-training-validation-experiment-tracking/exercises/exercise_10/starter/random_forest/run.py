@@ -1,20 +1,24 @@
 #!/usr/bin/env python
 import argparse
-import logging
 import json
+import logging
 
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import wandb
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OrdinalEncoder, StandardScaler, FunctionTransformer
-import matplotlib.pyplot as plt
-import wandb
-from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import plot_confusion_matrix, roc_auc_score
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import (
+    FunctionTransformer,
+    OrdinalEncoder,
+    StandardScaler,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
@@ -61,14 +65,18 @@ def go(args):
 
     # For the NLP feature we sum across all the TF-IDF dimensions into a global
     # NLP importance
-    nlp_importance = sum(pipe["classifier"].feature_importances_[len(feat_names) :])
+    nlp_importance = sum(
+        pipe["classifier"].feature_importances_[len(feat_names) :]
+    )
 
     feat_imp = np.append(feat_imp, nlp_importance)
     feat_names = np.append(feat_names, "title + song_name")
 
     fig_feat_imp, sub_feat_imp = plt.subplots(figsize=(10, 10))
     idx = np.argsort(feat_imp)[::-1]
-    sub_feat_imp.bar(range(feat_imp.shape[0]), feat_imp[idx], color="r", align="center")
+    sub_feat_imp.bar(
+        range(feat_imp.shape[0]), feat_imp[idx], color="r", align="center"
+    )
     _ = sub_feat_imp.set_xticks(range(feat_imp.shape[0]))
     _ = sub_feat_imp.set_xticklabels(feat_names[idx], rotation=90)
 
@@ -114,22 +122,27 @@ def get_inference_pipeline(args):
     )
 
     # Numerical preprocessing pipeline
-    numeric_features = sorted([
-        "danceability",
-        "energy",
-        "loudness",
-        "speechiness",
-        "acousticness",
-        "instrumentalness",
-        "liveness",
-        "valence",
-        "tempo",
-        "duration_ms",
-    ])
+    numeric_features = sorted(
+        [
+            "danceability",
+            "energy",
+            "loudness",
+            "speechiness",
+            "acousticness",
+            "instrumentalness",
+            "liveness",
+            "valence",
+            "tempo",
+            "duration_ms",
+        ]
+    )
 
     ############# YOUR CODE HERE
-    numeric_transformer = # USE make_pipeline to create a pipeline containing a SimpleImputer using strategy=median
-                          # and a StandardScaler (you can use the default options for the latter)
+    # USE make_pipeline to create a pipeline containing a SimpleImputer using strategy=median
+    # and a StandardScaler (you can use the default options for the latter)
+    numeric_transformer = make_pipeline(
+        SimpleImputer(strategy="median"), StandardScaler()
+    )
 
     # Textual ("nlp") preprocessing pipeline
     nlp_features = ["text_feature"]
@@ -138,16 +151,25 @@ def get_inference_pipeline(args):
     reshape_to_1d = FunctionTransformer(np.reshape, kw_args={"newshape": -1})
 
     ############# YOUR CODE HERE
-    nlp_transformer = # USE make_pipeline to create a pipeline containing a SimpleImputer with strategy=constant and
-                      # fill_value="" (the empty string), followed by our custom reshape_to_1d instance, and finally
-                      # insert a TfidfVectorizer with the options binary=True
+    # USE make_pipeline to create a pipeline containing a SimpleImputer with strategy=constant and
+    # fill_value="" (the empty string), followed by our custom reshape_to_1d instance, and finally
+    # insert a TfidfVectorizer with the options binary=True
+    nlp_transformer = make_pipeline(
+        SimpleImputer(strategy="constant", fill_value=""),
+        reshape_to_1d,
+        TfidfVectorizer(binary=True),
+    )
 
     # Put the 3 tracks together into one pipeline using the ColumnTransformer
     # This also drops the columns that we are not explicitly transforming
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", numeric_transformer, numeric_features),
-            ("cat", # COMPLETE HERE using the categorical transformer and the categorical_features,
+            (
+                "cat",
+                categorical_transformer,
+                categorical_features,
+            ),  # COMPLETE HERE using the categorical transformer and the categorical_features,
             ("nlp1", nlp_transformer, nlp_features),
         ],
         remainder="drop",  # This drops the columns that we do not transform (i.e., we don't use)
@@ -163,13 +185,20 @@ def get_inference_pipeline(args):
     ############# YOUR CODE HERE
     # Append classifier to preprocessing pipeline.
     # Now we have a full prediction pipeline.
-    pipe = # CREATE a Pipeline instances with 2 steps: one step called "preprocessor" using the
-           # preprocessor instance, and another one called "classifier" using RandomForestClassifier(**model_config)
-           # (i.e., a Random Forest with the configuration we have received as input)
-           # NOTE: here you should create the Pipeline object directly, and not make_pipeline
-           # HINT: Pipeline(steps=[("preprocessor", instance1), ("classifier", LogisticRegression)]) creates a
-           #       Pipeline with two steps called "preprocessor" and "classifier" using the sklearn instances instance1
-           #       as preprocessor and a LogisticRegression as classifier
+    # CREATE a Pipeline instances with 2 steps: one step called "preprocessor" using the
+    # preprocessor instance, and another one called "classifier" using RandomForestClassifier(**model_config)
+    # (i.e., a Random Forest with the configuration we have received as input)
+    # NOTE: here you should create the Pipeline object directly, and not make_pipeline
+    # HINT: Pipeline(steps=[("preprocessor", instance1), ("classifier", LogisticRegression)]) creates a
+    #       Pipeline with two steps called "preprocessor" and "classifier" using the sklearn instances instance1
+    #       as preprocessor and a LogisticRegression as classifier
+    pipe = Pipeline(
+        steps=[
+            ("preprocessor", preprocessor),
+            ("classifier", RandomForestClassifier(**model_config)),
+        ]
+    )
+
     return pipe
 
 

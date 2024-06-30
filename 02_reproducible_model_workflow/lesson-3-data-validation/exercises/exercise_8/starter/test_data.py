@@ -1,7 +1,7 @@
-import pytest
-import wandb
 import pandas as pd
+import pytest
 import scipy.stats
+import wandb
 
 # This is global so all tests are collected under the same
 # run
@@ -34,7 +34,7 @@ def test_kolmogorov_smirnov(data):
         "liveness",
         "valence",
         "tempo",
-        "duration_ms"
+        "duration_ms",
     ]
 
     # Let's decide the Type I error probability (related to the False Positive Rate)
@@ -42,13 +42,16 @@ def test_kolmogorov_smirnov(data):
     # Bonferroni correction for multiple hypothesis testing
     # (see my blog post on this topic to see where this comes from:
     # https://towardsdatascience.com/precision-and-recall-trade-off-and-multiple-hypothesis-testing-family-wise-error-rate-vs-false-71a85057ca2b)
-    alpha_prime = 1 - (1 - alpha)**(1 / len(numerical_columns))
+    alpha_prime = 1 - (1 - alpha) ** (1 / len(numerical_columns))
 
     for col in numerical_columns:
 
         # Use the 2-sample KS test (scipy.stats.ks_2sample) on the column
         # col
-        ts, p_value = # YOUR CODE HERE
+        ts, p_value = scipy.stats.ks_2samp(
+            sample1[col], sample2[col], alternative="two-sided"
+        )
 
         # Add an assertion so that the test fails if p_value > alpha_prime
         # YOUR CODE HERE
+        assert p_value > alpha_prime

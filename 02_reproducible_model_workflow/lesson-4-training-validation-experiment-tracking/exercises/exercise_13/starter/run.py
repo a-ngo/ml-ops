@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 import argparse
 import logging
+
+# Hack
+import numpy as np
+
+np.object = object
+
+import matplotlib.pyplot as plt
+import mlflow.sklearn
 import pandas as pd
 import wandb
-import mlflow.sklearn
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_auc_score, plot_confusion_matrix
+from sklearn.metrics import plot_confusion_matrix, roc_auc_score
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
@@ -17,7 +23,8 @@ def go(args):
 
     logger.info("Downloading and reading test artifact")
     ## Get the args.test_data artifact from W&B locally
-    test_data_path = ## YOUR CODE HERE
+    ## YOUR CODE HERE
+    test_data_path = run.use_artifact(args.test_data).file()
     df = pd.read_csv(test_data_path, low_memory=False)
 
     # Extract the target from the features
@@ -29,16 +36,23 @@ def go(args):
 
     ## Get the args.model_export artifact from W&B locally. Since this artifact contains a directory
     # and not a single file, you will have to use .download() instead of .file()
-    model_export_path = ## YOUR CODE HERE
+    ## YOUR CODE HERE
+    model_export_path = run.use_artifact(args.model_export).download()
+
+    print(f"Model export path is: {model_export_path}")
 
     # Load the model using mlflow.sklearn.load_model
-    pipe = ## YOUR CODE HERE
+    ## YOUR CODE HERE
+    pipe = mlflow.sklearn.load_model(model_export_path)
 
     # Compute the prediction from the model using .predict_proba on the test set
-    pred_proba = ## YOUR CODE HERE
+    ## YOUR CODE HERE
+    pred_proba = pipe.predict_proba(X_test)
 
     logger.info("Scoring")
-    score = roc_auc_score(y_test, pred_proba, average="macro", multi_class="ovo")
+    score = roc_auc_score(
+        y_test, pred_proba, average="macro", multi_class="ovo"
+    )
 
     run.summary["AUC"] = score
 
@@ -55,11 +69,7 @@ def go(args):
     )
     fig_cm.tight_layout()
 
-    run.log(
-        {
-            "confusion_matrix": wandb.Image(fig_cm)
-        }
-    )
+    run.log({"confusion_matrix": wandb.Image(fig_cm)})
 
 
 if __name__ == "__main__":
